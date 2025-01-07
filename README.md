@@ -2,7 +2,7 @@
 ![Cosmos Logo](assets/cosmos-logo.png)
 
 --------------------------------------------------------------------------------
-### [System Card](https://nvdam.widen.net/s/knnqs6ghqn/nvidia-cosmos-system-card) | [Model Cards](https://huggingface.co/collections/nvidia/cosmos-6751e884dc10e013a0a0d8e6) | [Report](https://research.nvidia.com/publication/2025-01_cosmos-world-foundation-model-platform-physical-ai)
+### [Website](https://www.nvidia.com/en-us/ai/cosmos/) | [System Card](https://nvdam.widen.net/s/knnqs6ghqn/nvidia-cosmos-system-card) | [Model Cards](https://huggingface.co/collections/nvidia/cosmos-6751e884dc10e013a0a0d8e6) | [Free API](https://build.nvidia.com/explore/discover) | [Paper](https://research.nvidia.com/publication/2025-01_cosmos-world-foundation-model-platform-physical-ai) | [Paper Website](https://research.nvidia.com/labs/dir/cosmos1/)
 
 [NVIDIA Cosmos](https://www.nvidia.com/cosmos/) is a developer-first world foundation model platform designed to help Physical AI developers build their Physical AI systems better and faster. Cosmos contains
 
