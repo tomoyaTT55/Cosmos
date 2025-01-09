@@ -138,7 +138,7 @@ Complete the following steps to generate a new output video.
 
 The following output is an example video generated from the post-trained model using [`general.py`](./general.py):
 
-<video src="https://github.com/user-attachments/assets/482c35b8-71bb-4d20-888a-abe7c2741933">
+<video src="https://github.com/user-attachments/assets/e744a5a4-2ce0-4de3-9497-7152b25c9022">
   Your browser does not support the video tag.
 </video>
 

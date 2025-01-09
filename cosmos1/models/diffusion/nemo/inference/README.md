@@ -151,7 +151,7 @@ Complete the following steps to generate a new output video from the model post-
 
 The following output is an example video generated from the post-trained model using [`general.py`](./inference/general.py):
 
-<video src="https://github.com/user-attachments/assets/6c8ae0b7-fce4-4ec8-9aa6-68ad141df11f">
+<video src="https://github.com/user-attachments/assets/a2b5bc7e-4e0a-4514-a04e-919281cee6fa">
   Your browser does not support the video tag.
 </video>
 

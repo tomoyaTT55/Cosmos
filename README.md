@@ -59,7 +59,7 @@ PYTHONPATH=$(pwd) python cosmos1/models/diffusion/inference/text2world.py \
     --video_save_name Cosmos-1.0-Diffusion-7B-Text2World
 ```
 
-<video src="https://github.com/user-attachments/assets/d3ce56ad-ed6c-445b-a67a-62487e9c32ce">
+<video src="https://github.com/user-attachments/assets/db7bebfe-5314-40a6-b045-4f6ce0a87f2a">
   Your browser does not support the video tag.
 </video>
 
