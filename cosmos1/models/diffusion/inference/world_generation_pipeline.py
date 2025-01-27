@@ -61,8 +61,7 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
         checkpoint_name: str,
         prompt_upsampler_dir: Optional[str] = None,
         enable_prompt_upsampler: bool = True,
-        enable_text_guardrail: bool = True,
-        enable_video_guardrail: bool = True,
+        has_text_input: bool = True,
         offload_network: bool = False,
         offload_tokenizer: bool = False,
         offload_text_encoder_model: bool = False,
@@ -84,8 +83,7 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
             checkpoint_name: Name of the diffusion transformer checkpoint to use
             prompt_upsampler_dir: Directory containing prompt upsampler model weights
             enable_prompt_upsampler: Whether to use prompt upsampling
-            enable_text_guardrail: Whether to enable text guardrail
-            enable_video_guardrail: Whether to enable video guardrail
+            has_text_input: Whether the pipeline takes text input for world generation
             offload_network: Whether to offload diffusion transformer after inference
             offload_tokenizer: Whether to offload tokenizer after inference
             offload_text_encoder_model: Whether to offload T5 model after inference
@@ -117,8 +115,7 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
             inference_type=inference_type,
             checkpoint_dir=checkpoint_dir,
             checkpoint_name=checkpoint_name,
-            enable_text_guardrail=enable_text_guardrail,
-            enable_video_guardrail=enable_video_guardrail,
+            has_text_input=has_text_input,
             offload_network=offload_network,
             offload_tokenizer=offload_tokenizer,
             offload_text_encoder_model=offload_text_encoder_model,
@@ -318,13 +315,12 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
         log.info(f"Run with negative prompt: {negative_prompt}")
         log.info(f"Run with prompt upsampler: {self.enable_prompt_upsampler}")
 
-        if self.enable_text_guardrail:
-            log.info("Run guardrail on prompt")
-            is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
-            if not is_safe:
-                log.critical("Input text prompt is not safe")
-                return None
-            log.info("Pass guardrail on prompt")
+        log.info("Run guardrail on prompt")
+        is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
+        if not is_safe:
+            log.critical("Input text prompt is not safe")
+            return None
+        log.info("Pass guardrail on prompt")
 
         # Enhance prompt
         if self.enable_prompt_upsampler:
@@ -332,13 +328,12 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
             if word_limit_to_skip_upsampler is None or word_count <= word_limit_to_skip_upsampler:
                 log.info("Run prompt upsampler on prompt")
                 prompt = self._run_prompt_upsampler_on_prompt_with_offload(prompt)
-                if self.enable_text_guardrail:
-                    log.info("Run guardrail on upsampled prompt")
-                    is_safe = self._run_guardrail_on_prompt_with_offload(prompt=prompt)
-                    if not is_safe:
-                        log.critical("Upsampled text prompt is not safe")
-                        return None
-                    log.info("Pass guardrail on upsampled prompt")
+                log.info("Run guardrail on upsampled prompt")
+                is_safe = self._run_guardrail_on_prompt_with_offload(prompt=prompt)
+                if not is_safe:
+                    log.critical("Upsampled text prompt is not safe")
+                    return None
+                log.info("Pass guardrail on upsampled prompt")
             else:
                 log.info(
                     f"Skip prompt upsampler for better robustness because the number of words ({word_count}) in the prompt is greater than {word_limit_to_skip_upsampler}"
@@ -362,13 +357,12 @@ class DiffusionText2WorldGenerationPipeline(BaseWorldGenerationPipeline):
         )
         log.info("Finish generation")
 
-        if self.enable_video_guardrail:
-            log.info("Run guardrail on generated video")
-            video = self._run_guardrail_on_video_with_offload(video)
-            if video is None:
-                log.critical("Generated video is not safe")
-                return None
-            log.info("Pass guardrail on generated video")
+        log.info("Run guardrail on generated video")
+        video = self._run_guardrail_on_video_with_offload(video)
+        if video is None:
+            log.critical("Generated video is not safe")
+            return None
+        log.info("Pass guardrail on generated video")
 
         return video, prompt
 
@@ -381,8 +375,7 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
         checkpoint_name: str,
         prompt_upsampler_dir: Optional[str] = None,
         enable_prompt_upsampler: bool = True,
-        enable_text_guardrail: bool = True,
-        enable_video_guardrail: bool = True,
+        has_text_input: bool = True,
         offload_network: bool = False,
         offload_tokenizer: bool = False,
         offload_text_encoder_model: bool = False,
@@ -405,8 +398,7 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
             checkpoint_name: Name of the diffusion transformer checkpoint to use
             prompt_upsampler_dir: Directory containing prompt upsampler model weights
             enable_prompt_upsampler: Whether to use prompt upsampling
-            enable_text_guardrail: Whether to enable text guardrail
-            enable_video_guardrail: Whether to enable video guardrail
+            has_text_input: Whether the pipeline takes text input for world generation
             offload_network: Whether to offload diffusion transformer after inference
             offload_tokenizer: Whether to offload tokenizer after inference
             offload_text_encoder_model: Whether to offload T5 model after inference
@@ -428,8 +420,7 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
             checkpoint_name=checkpoint_name,
             prompt_upsampler_dir=prompt_upsampler_dir,
             enable_prompt_upsampler=enable_prompt_upsampler,
-            enable_text_guardrail=enable_text_guardrail,
-            enable_video_guardrail=enable_video_guardrail,
+            has_text_input=has_text_input,
             offload_network=offload_network,
             offload_tokenizer=offload_tokenizer,
             offload_text_encoder_model=offload_text_encoder_model,
@@ -608,25 +599,22 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
         log.info(f"Run with negative prompt: {negative_prompt}")
         log.info(f"Run with prompt upsampler: {self.enable_prompt_upsampler}")
 
-        if self.enable_text_guardrail and not self.enable_prompt_upsampler:
+        if not self.enable_prompt_upsampler:
             log.info("Run guardrail on prompt")
             is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
             if not is_safe:
                 log.critical("Input text prompt is not safe")
                 return None
             log.info("Pass guardrail on prompt")
-
-        # Enhance prompt
-        if self.enable_prompt_upsampler:
+        else:
             log.info("Run prompt upsampler on image or video, input prompt is not used")
             prompt = self._run_prompt_upsampler_on_prompt_with_offload(image_or_video_path=image_or_video_path)
-            if self.enable_text_guardrail:
-                log.info("Run guardrail on upsampled prompt")
-                is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
-                if not is_safe:
-                    log.critical("Upsampled text prompt is not safe")
-                    return None
-                log.info("Pass guardrail on upsampled prompt")
+            log.info("Run guardrail on upsampled prompt")
+            is_safe = self._run_guardrail_on_prompt_with_offload(prompt)
+            if not is_safe:
+                log.critical("Upsampled text prompt is not safe")
+                return None
+            log.info("Pass guardrail on upsampled prompt")
 
         log.info("Run text embedding on prompt")
         if negative_prompt:
@@ -647,12 +635,11 @@ class DiffusionVideo2WorldGenerationPipeline(DiffusionText2WorldGenerationPipeli
         )
         log.info("Finish generation")
 
-        if self.enable_video_guardrail:
-            log.info("Run guardrail on generated video")
-            video = self._run_guardrail_on_video_with_offload(video)
-            if video is None:
-                log.critical("Generated video is not safe")
-                return None
-            log.info("Pass guardrail on generated video")
+        log.info("Run guardrail on generated video")
+        video = self._run_guardrail_on_video_with_offload(video)
+        if video is None:
+            log.critical("Generated video is not safe")
+            return None
+        log.info("Pass guardrail on generated video")
 
         return video, prompt

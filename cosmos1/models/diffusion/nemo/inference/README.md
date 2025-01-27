@@ -94,6 +94,7 @@ Complete the following steps to generate a new output video of a robot cooking.
 
    # Number of GPU devices available for inference. Supports up to 8 GPUs for accelerated inference.
    export NUM_DEVICES=1
+   export CUDA_VISIBLE_DEVICES=$(seq -s, 0 $((NUM_DEVICES - 1)))
 
    # Prompt describing world scene and actions taken by subject (if provided).
    export PROMPT="The teal robot is cooking food in a kitchen. Steam rises from a simmering pot as the robot chops vegetables on a worn wooden cutting board. Copper pans hang from an overhead rack, catching glints of afternoon light, while a well-loved cast iron skillet sits on the stovetop next to scattered measuring spoons and a half-empty bottle of olive oil."
@@ -114,7 +115,8 @@ Complete the following steps to generate a new output video of a robot cooking.
 
 ### Run the Inference Script with Post-trained Model
 
-Complete the following steps to generate a new output video from the model post-trained with general post-training.
+Create a post-trained model first, by using the instructions [here](../post_training/README.md)
+Then complete the following steps to generate a new output video from this model.
 
 1. Set the following environment variables:
    ```bash
@@ -127,6 +129,7 @@ Complete the following steps to generate a new output video from the model post-
 
    # Number of GPU devices available for inference. Supports up to 8 GPUs for accelerated inference.
    export NUM_DEVICES=1
+   export CUDA_VISIBLE_DEVICES=$(seq -s, 0 $((NUM_DEVICES - 1)))
 
    # Prompt describing world scene and actions taken by subject (if provided).
    export PROMPT="The teal robot is cooking food in a kitchen. Steam rises from a simmering pot as the robot chops vegetables on a worn wooden cutting board. Copper pans hang from an overhead rack, catching glints of afternoon light, while a well-loved cast iron skillet sits on the stovetop next to scattered measuring spoons and a half-empty bottle of olive oil."

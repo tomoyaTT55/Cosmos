@@ -181,7 +181,7 @@ PYTHONPATH=$(pwd) python cosmos1/models/diffusion/inference/text2world.py \
 
 ##### Example Output
 
-Here is an example output video generated using text2world.py:
+Here is an example output video generated using text2world.py, using `Cosmos-1.0-Diffusion-7B-Text2World`:
 
 <video src="https://github.com/user-attachments/assets/db7bebfe-5314-40a6-b045-4f6ce0a87f2a">
   Your browser does not support the video tag.
@@ -351,7 +351,7 @@ The following table shows the end-to-end inference runtime on a single H100 GPU,
 | `--offload_prompt_upsampler` | Offload prompt upsampler after inference, used for low-memory GPUs | False |
 | `--offload_guardrail_models` | Offload guardrail models after inference, used for low-memory GPUs | False |
 
-Note: we support various aspect ratios, including 1:1 (960x960 for height and width), 4:3 (960x704), 3:4 (704x960), 16:9 (1280x704), and 9:16 (704x1280). The frame rate is also adjustable within a range of 12 to 40 fps.
+Note: we support various aspect ratios, including 1:1 (960x960 for height and width), 4:3 (960x704), 3:4 (704x960), 16:9 (1280x704), and 9:16 (704x1280). The frame rate is also adjustable within a range of 12 to 40 fps. The current version of the model only supports 121 frames.
 
 #### Text2World Specific Parameters
 

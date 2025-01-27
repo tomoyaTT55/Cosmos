@@ -163,8 +163,7 @@ class ARBaseGenerationPipeline(BaseWorldGenerationPipeline):
         inference_type: str,
         checkpoint_dir: str,
         checkpoint_name: str,
-        enable_text_guardrail: bool = False,
-        enable_video_guardrail: bool = True,
+        has_text_input: bool = False,
         offload_network: bool = False,
         offload_tokenizer: bool = False,
         disable_diffusion_decoder: bool = False,
@@ -177,8 +176,7 @@ class ARBaseGenerationPipeline(BaseWorldGenerationPipeline):
             inference_type: Type of world generation ('base' or 'video2world')
             checkpoint_dir: Base directory containing model checkpoints
             checkpoint_name: Name of the AR checkpoint to load
-            enable_text_guardrail: Whether to enable text content filtering
-            enable_video_guardrail: Whether to enable video content filtering
+            has_text_input: Whether the pipeline takes text input for world generation
             disable_diffusion_decoder: Whether to disable the diffusion decoder stage
             offload_network: Whether to offload AR model from GPU after use
             offload_guardrail_models: Whether to offload content filtering models
@@ -235,8 +233,7 @@ class ARBaseGenerationPipeline(BaseWorldGenerationPipeline):
             inference_type=inference_type,
             checkpoint_dir=checkpoint_dir,
             checkpoint_name=checkpoint_name,
-            enable_text_guardrail=enable_text_guardrail,
-            enable_video_guardrail=enable_video_guardrail,
+            has_text_input=has_text_input,
             offload_guardrail_models=offload_guardrail_models,
             offload_network=offload_network,
             offload_tokenizer=offload_tokenizer,
@@ -426,13 +423,12 @@ class ARBaseGenerationPipeline(BaseWorldGenerationPipeline):
         out_videos_cur_batch = prepare_video_batch_for_saving(out_videos_cur_batch)
         output_video = out_videos_cur_batch[0]
 
-        if self.enable_video_guardrail:
-            log.info("Run guardrail on generated video")
-            output_video = self._run_guardrail_on_video_with_offload(output_video)
-            if output_video is None:
-                log.critical("Generated video is not safe")
-                return None
-            log.info("Finish guardrail on generated video")
+        log.info("Run guardrail on generated video")
+        output_video = self._run_guardrail_on_video_with_offload(output_video)
+        if output_video is None:
+            log.critical("Generated video is not safe")
+            return None
+        log.info("Finish guardrail on generated video")
 
         return output_video
 
@@ -683,8 +679,7 @@ class ARVideo2WorldGenerationPipeline(ARBaseGenerationPipeline):
         checkpoint_dir: str,
         checkpoint_name: str,
         inference_type: str = None,
-        enable_text_guardrail: bool = True,
-        enable_video_guardrail: bool = True,
+        has_text_input: bool = True,
         disable_diffusion_decoder: bool = False,
         offload_guardrail_models: bool = False,
         offload_diffusion_decoder: bool = False,
@@ -698,8 +693,7 @@ class ARVideo2WorldGenerationPipeline(ARBaseGenerationPipeline):
             checkpoint_dir: Base directory containing model checkpoints
             checkpoint_name: Name of the checkpoint to load
             inference_type: Type of world generation workflow
-            enable_text_guardrail: Whether to enable content filtering for text (default: True)
-            enable_video_guardrail: Whether to enable content filtering for video (default: True)
+            has_text_input: Whether the pipeline takes text input for world generation
             disable_diffusion_decoder: Whether to disable diffusion decoder stage
             offload_guardrail_models: Whether to offload content filtering models
             offload_diffusion_decoder: Whether to offload diffusion decoder
@@ -711,8 +705,7 @@ class ARVideo2WorldGenerationPipeline(ARBaseGenerationPipeline):
             checkpoint_dir=checkpoint_dir,
             checkpoint_name=checkpoint_name,
             inference_type=inference_type,
-            enable_text_guardrail=enable_text_guardrail,
-            enable_video_guardrail=enable_video_guardrail,
+            has_text_input=has_text_input,
             disable_diffusion_decoder=disable_diffusion_decoder,
             offload_guardrail_models=offload_guardrail_models,
             offload_diffusion_decoder=offload_diffusion_decoder,
@@ -871,13 +864,12 @@ class ARVideo2WorldGenerationPipeline(ARBaseGenerationPipeline):
             np.ndarray | None: Generated video as numpy array (time, height, width, channels)
                 if generation successful, None if safety checks fail
         """
-        if self.enable_text_guardrail:
-            log.info("Run guardrail on prompt")
-            is_safe = self._run_guardrail_on_prompt_with_offload(inp_prompt)
-            if not is_safe:
-                log.critical("Input text prompt is not safe")
-                return None
-            log.info("Pass guardrail on prompt")
+        log.info("Run guardrail on prompt")
+        is_safe = self._run_guardrail_on_prompt_with_offload(inp_prompt)
+        if not is_safe:
+            log.critical("Input text prompt is not safe")
+            return None
+        log.info("Pass guardrail on prompt")
 
         log.info("Run text embedding on prompt")
         prompt_embeddings, prompt_masks = self._run_text_embedding_on_prompt_with_offload([inp_prompt])
@@ -900,12 +892,11 @@ class ARVideo2WorldGenerationPipeline(ARBaseGenerationPipeline):
         out_videos_cur_batch = prepare_video_batch_for_saving(out_videos_cur_batch)
         output_video = out_videos_cur_batch[0]
 
-        if self.enable_video_guardrail:
-            log.info("Run guardrail on generated video")
-            output_video = self._run_guardrail_on_video_with_offload(output_video)
-            if output_video is None:
-                log.critical("Generated video is not safe")
-                return None
-            log.info("Finish guardrail on generated video")
+        log.info("Run guardrail on generated video")
+        output_video = self._run_guardrail_on_video_with_offload(output_video)
+        if output_video is None:
+            log.critical("Generated video is not safe")
+            return None
+        log.info("Finish guardrail on generated video")
 
         return output_video

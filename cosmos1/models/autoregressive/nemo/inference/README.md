@@ -105,7 +105,8 @@ Complete the following steps to run inference on the 4B model.
 
 ### Run the Inference Script with Post-trained Model
 
-Complete the following steps to generate a new output video.
+Create a post-trained model first, by using the instructions [here](../post_training/README.md)
+Complete the following steps to generate a new output video using this model.
 
 1. Set the following environment variables:
    ```bash
@@ -113,6 +114,7 @@ Complete the following steps to generate a new output video.
    export HF_HOME="<path/to/store/checkpoints>"
 
    # Inference with post-trained model.
+   # NOTE: Dont use the checkpoint with -last suffix.
    export NEMO_CHECKPOINT=./logs/default/checkpoints/epoch\=0-step\=19
 
    # Path to the the mp4 file (In git-lfs)

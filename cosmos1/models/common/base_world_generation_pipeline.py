@@ -31,8 +31,7 @@ class BaseWorldGenerationPipeline(ABC):
         inference_type: str | None = None,
         checkpoint_dir: str | None = None,
         checkpoint_name: str | None = None,
-        enable_text_guardrail: bool = False,
-        enable_video_guardrail: bool = False,
+        has_text_input: bool = False,
         offload_network: bool = False,
         offload_tokenizer: bool = False,
         offload_text_encoder_model: bool = False,
@@ -50,8 +49,7 @@ class BaseWorldGenerationPipeline(ABC):
             inference_type: The type of inference pipeline ("text2world" or "video2world")
             checkpoint_dir: Root directory containing model checkpoints
             checkpoint_name: Name of the specific checkpoint file to load
-            enable_text_guardrail: If True, validates input prompts for safety
-            enable_video_guardrail: If True, validates generated videos for safety
+            has_text_input: Whether the pipeline takes text input for world generation
             offload_network: If True, moves main model to CPU after inference
             offload_tokenizer: If True, moves tokenizer to CPU after use
             offload_text_encoder_model: If True, moves T5 encoder to CPU after encoding
@@ -61,8 +59,7 @@ class BaseWorldGenerationPipeline(ABC):
         self.checkpoint_dir = checkpoint_dir
         self.checkpoint_name = checkpoint_name
         self.guardrail_dir = "Cosmos-1.0-Guardrail"
-        self.enable_text_guardrail = enable_text_guardrail
-        self.enable_video_guardrail = enable_video_guardrail
+        self.has_text_input = has_text_input
 
         # Add offloading flags
         self.offload_network = offload_network
@@ -81,10 +78,9 @@ class BaseWorldGenerationPipeline(ABC):
         if not self.offload_text_encoder_model:
             self._load_text_encoder_model()
         if not self.offload_guardrail_models:
-            if self.enable_text_guardrail:
+            if self.has_text_input:
                 self._load_text_guardrail()
-            if self.enable_video_guardrail:
-                self._load_video_guardrail()
+            self._load_video_guardrail()
         if not self.offload_network:
             self._load_network()
         if not self.offload_tokenizer:
