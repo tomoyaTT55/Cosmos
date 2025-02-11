@@ -18,16 +18,16 @@ import os
 import nemo_run as run
 from huggingface_hub import snapshot_download
 from nemo.collections import llm
-from nemo.collections.diffusion.models.model import DiT7BConfig, DiT14BConfig
+from nemo.collections.diffusion.models.model import DiT7BVideo2WorldConfig, DiT14BVideo2WorldConfig
 from nemo.collections.diffusion.train import pretrain, videofolder_datamodule
 from nemo.lightning.pytorch.strategies.utils import RestoreConfig
 
 
 @run.cli.factory(target=llm.train)
-def cosmos_diffusion_7b_text2world_finetune() -> run.Partial:
+def cosmos_diffusion_7b_video2world_finetune() -> run.Partial:
     # Model setup
     recipe = pretrain()
-    recipe.model.config = run.Config(DiT7BConfig)
+    recipe.model.config = run.Config(DiT7BVideo2WorldConfig)
 
     # Trainer setup
     recipe.trainer.max_steps = 1000
@@ -57,21 +57,21 @@ def cosmos_diffusion_7b_text2world_finetune() -> run.Partial:
     # Checkpoint load
     recipe.resume.restore_config = run.Config(RestoreConfig, load_artifacts=False)
     recipe.resume.restore_config.path = os.path.join(
-        snapshot_download("nvidia/Cosmos-1.0-Diffusion-7B-Text2World", allow_patterns=["nemo/*"]), "nemo"
+        snapshot_download("nvidia/Cosmos-1.0-Diffusion-7B-Video2World", allow_patterns=["nemo/*"]), "nemo"
     )  # path to diffusion model checkpoint
     recipe.resume.resume_if_exists = False
 
     # Directory to save checkpoints / logs
-    recipe.log.log_dir = "nemo_experiments/cosmos_diffusion_7b_text2world_finetune"
+    recipe.log.log_dir = "nemo_experiments/cosmos_diffusion_7b_video2world_finetune"
 
     return recipe
 
 
 @run.cli.factory(target=llm.train)
-def cosmos_diffusion_14b_text2world_finetune() -> run.Partial:
+def cosmos_diffusion_14b_video2world_finetune() -> run.Partial:
     # Model setup
     recipe = pretrain()
-    recipe.model.config = run.Config(DiT14BConfig)
+    recipe.model.config = run.Config(DiT14BVideo2WorldConfig)
 
     # Trainer setup
     recipe.trainer.max_steps = 1000
@@ -101,16 +101,15 @@ def cosmos_diffusion_14b_text2world_finetune() -> run.Partial:
     # Checkpoint load
     recipe.resume.restore_config = run.Config(RestoreConfig, load_artifacts=False)
     recipe.resume.restore_config.path = os.path.join(
-        snapshot_download("nvidia/Cosmos-1.0-Diffusion-14B-Text2World", allow_patterns=["nemo/*"]), "nemo"
+        snapshot_download("nvidia/Cosmos-1.0-Diffusion-14B-Video2World", allow_patterns=["nemo/*"]), "nemo"
     )  # path to diffusion model checkpoint
-
     recipe.resume.resume_if_exists = False
 
     # Directory to save checkpoints / logs
-    recipe.log.log_dir = "nemo_experiments/cosmos_diffusion_14b_text2world_finetune"
+    recipe.log.log_dir = "nemo_experiments/cosmos_diffusion_14b_video2world_finetune"
 
     return recipe
 
 
 if __name__ == "__main__":
-    run.cli.main(llm.train, default_factory=cosmos_diffusion_7b_text2world_finetune)
+    run.cli.main(llm.train, default_factory=cosmos_diffusion_7b_video2world_finetune)

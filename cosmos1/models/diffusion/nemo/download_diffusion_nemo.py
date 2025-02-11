@@ -27,6 +27,8 @@ def download_diffusion_nemo():
     snapshot_download("nvidia/Cosmos-1.0-Tokenizer-CV8x8x8")
     snapshot_download("nvidia/Cosmos-1.0-Diffusion-7B-Text2World", allow_patterns=["nemo/*"])
     snapshot_download("nvidia/Cosmos-1.0-Diffusion-14B-Text2World", allow_patterns=["nemo/*"])
+    snapshot_download("nvidia/Cosmos-1.0-Diffusion-7B-Video2World", allow_patterns=["nemo/*"])
+    snapshot_download("nvidia/Cosmos-1.0-Diffusion-14B-Video2World", allow_patterns=["nemo/*"])
     snapshot_download("nvidia/Cosmos-1.0-Prompt-Upsampler-12B-Text2World")
     snapshot_download("google-t5/t5-11b", ignore_patterns=["*.h5"])
 

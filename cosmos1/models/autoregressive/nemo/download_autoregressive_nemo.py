@@ -27,6 +27,8 @@ def download_autregressive_nemo():
     snapshot_download("nvidia/Cosmos-1.0-Tokenizer-DV8x16x16")
     snapshot_download("nvidia/Cosmos-1.0-Autoregressive-4B", allow_patterns=["nemo/*"])
     snapshot_download("nvidia/Cosmos-1.0-Autoregressive-12B", allow_patterns=["nemo/*"])
+    snapshot_download("nvidia/Cosmos-1.0-Autoregressive-5B-Video2World", allow_patterns=["nemo/*"])
+    snapshot_download("nvidia/Cosmos-1.0-Autoregressive-13B-Video2World", allow_patterns=["nemo/*"])
     snapshot_download("nvidia/Cosmos-1.0-Diffusion-7B-Decoder-DV8x16x16ToCV8x8x8")
 
 

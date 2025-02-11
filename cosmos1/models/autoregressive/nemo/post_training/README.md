@@ -10,8 +10,8 @@ The NeMo Framework supports the following Cosmos Autoregressive (AR) models. Rev
 |-------------------------|----------------------------|-------------------------------------------|
 | Cosmos-1.0-Autoregressive-4B                  | **Supported**       | 2 NVIDIA GPUs*             |
 | Cosmos-1.0-Autoregressive-12B                 | **Supported**       | 8 NVIDIA GPUs*             |
-| Cosmos-1.0-Autoregressive-5B-Video2World      | **Coming Soon**     |                            |
-| Cosmos-1.0-Autoregressive-13B-Video2World     | **Coming Soon**     |                            |
+| Cosmos-1.0-Autoregressive-5B-Video2World      |  **Supported**      | 2 NVIDIA GPUs*             |
+| Cosmos-1.0-Autoregressive-13B-Video2World     |  **Supported**      | 8 NVIDIA GPUs*             |
 
 **\*** `H100-80GB` or `A100-80GB` GPUs are recommended.
 
@@ -49,10 +49,11 @@ git clone git@github.com:NVIDIA/Cosmos.git
 The [NeMo Framework container](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo) supports post-training and inference for Cosmos AR models.
 
 Run the following command to download and start the container:
+
    ```bash
    docker run --ipc=host -it --gpus=all \
     -v $PATH_TO_COSMOS_REPO:/workspace/Cosmos \
-    nvcr.io/nvidia/nemo:cosmos.1.0 bash
+    nvcr.io/nvidia/nemo:25.02.rc1 bash
    ```
 
 ### 4. Download Checkpoints
@@ -60,12 +61,15 @@ Run the following command to download and start the container:
 To help you get started, we've provided a [download script](../download_autoregressive_nemo.py) to get the Cosmos Autoregressive checkpoints from Hugging Face. These checkpoints are in the NeMo distributed checkpoint format required to run post-training and inference with NeMo Framework.
 
 1. Set the following environment variables:
+
    ```bash
    # You must set HF_HOME before running this script.
    export HF_TOKEN="<your/HF/access/token>"
    export HF_HOME="<path/to/store/checkpoints>"
    ```
+
 2. Run the following command to download the models:
+
    ```bash
    cd /workspace/Cosmos
    python cosmos1/models/autoregressive/nemo/download_autoregressive_nemo.py
@@ -81,17 +85,21 @@ There are 3 steps to post-training: preparing a dataset, preprocessing the data,
 
 ### 1. Prepare a Dataset
 
-The first step is to prepare a dataset. Post-training a Cosmos-1.0-Autoregressive-4B model enables you to get better video-frame predictions for your specific use case.
+The first step is to prepare a dataset. Post-training a Cosmos-1.0-Autoregressive model enables you to get better video-frame predictions for your specific use case.
 
 You must provide a folder containing a collection of videos in **MP4 format**, preferably 720p. In this guide, we'll use the sample videos located in the `cosmos1/models/autoregressive/assets/v1p0/batch_inputs` directory.
 
 ### 2. Preprocess Data
 
-The second step is to preprocess the data to create an [indexed dataset](https://github.com/NVIDIA/Megatron-LM/tree/main/megatron/core/datasets). The `IndexedDataset` class is the lowest-level data interface in Megatron Core and creates a `.bin` and `.idx` file.
+#### 4B and 12B Models
+The second step is to preprocess the data to create an [indexed dataset](https://github.com/NVIDIA/Megatron-LM/tree/main/megatron/core/datasets).
+
+The `IndexedDataset` class is the lowest-level data interface in Megatron Core and creates a `.bin` and `.idx` file.
 
 Before proceeding, ensure all videos are in **RGB format**. Complete the following steps to preprocess the data.
 
 1. Set the following environment variables:
+
    ```bash
    export HF_TOKEN="<your/HF/access/token>"
    export HF_HOME="<path/to/store/checkpoints>"
@@ -101,9 +109,10 @@ Before proceeding, ensure all videos are in **RGB format**. Complete the followi
 
    # Path to Processed Dataset.
    export OUTPUT_PREFIX="./indexed_videos"
-
    ```
+
 2. Run the following command to preprocess the data:
+
    ```bash
    cd /workspace/Cosmos
    git lfs pull --include=$RAW_DATA
@@ -113,7 +122,7 @@ Before proceeding, ensure all videos are in **RGB format**. Complete the followi
    --output_prefix $OUTPUT_PREFIX
    ```
 
-Executing the [data preprocessing script](./prepare_dataset.py) generates the following files for each video:
+Executing the [data preprocessing script](./prepare_dataset.py) for the base model generates the following files for each video:
 
 - **`[i].idx` File**: This file contains metadata at the dataset level:
   - **Index Header**: Ensures backward compatibility.
@@ -127,6 +136,45 @@ Executing the [data preprocessing script](./prepare_dataset.py) generates the fo
   - **Byte Offset per Sequence**: Pointer indicating the start of each sequence.
   - **Sequence Index Range**: Consecutive index range `[...)` for each document.
 
+#### 5B and 13B Models
+The second step is to preprocess the data to pre compute the text and video embeddings for finetuning..
+
+Before proceeding, ensure all videos are in **RGB format**. Complete the following steps to preprocess the data.
+
+1. Set the following environment variables:
+
+   ```bash
+   export HF_TOKEN="<your/HF/access/token>"
+   export HF_HOME="<path/to/store/checkpoints>"
+
+   # Path to Raw mp4 videos.
+   export RAW_DATA="cosmos1/models/autoregressive/assets/v1p0/batch_inputs"
+
+   # Path to Processed Dataset.
+   export OUTPUT_PREFIX="./indexed_videos"
+   ```
+
+2. Run the following command to preprocess the data:
+
+   ```bash
+   cd /workspace/Cosmos
+   git lfs pull --include=$RAW_DATA
+
+   python3 cosmos1/models/autoregressive/nemo/post_training/video2world_prepare_dataset.py \
+   --input_jsonl $RAW_DATA/video2world.jsonl \
+   --output_dir $OUTPUT_PREFIX
+   ```
+
+Executing the [data preprocessing script](./video2world_prepare_dataset.py) for the base model generates
+
+Executing the [data preprocessing script](./prepare_dataset.py) for the base model generates the following files for each video:
+
+- **`[i].pt` File**: This file contains video tokens or prompt embeddings:
+  - It has a format `<train/test/val>_<prompt/video>_<idx>.pt`
+
+- **`[i]metadata.json` File**: This file includes metadata:
+  - It tells you the number of train test and validation samples
+
 ### 3. Post-train the Model
 
 The third step is to post-train the model. This step uses NeMo Framework's data and model parallelism capabilities to train the model on the post-training samples. This is accomplished by utilizing Tensor Parallelism.
@@ -135,9 +183,12 @@ The third step is to post-train the model. This step uses NeMo Framework's data 
 
 #### Run the Post-training Script
 
+##### 4B AND 12B Models
+
 Complete the following steps to post-train the Cosmos-1.0-Autoregressive-4B model.
 
 1. Set the following environment variables:
+
    ```bash
    export HF_TOKEN="<your/HF/access/token>"
    export HF_HOME="<path/to/store/checkpoints>"
@@ -150,15 +201,50 @@ Complete the following steps to post-train the Cosmos-1.0-Autoregressive-4B mode
    export WANDB_PROJECT_NAME="cosmos-autoregressive-nemo-finetuning"
    export WANDB_RUN_ID="cosmos_autoregressive_4b_finetune"
    ```
+
 2. Run the following command for Cosmos-1.0-Autoregressive-4B post-training:
+
    ```bash
    torchrun --nproc-per-node $NUM_DEVICES cosmos1/models/autoregressive/nemo/post_training/general.py \
    --data_path $OUTPUT_PREFIX \
    --split_string 4,1,1 \
    --log_dir ./logs \
-   --max_steps 20 --save_every_n_steps 10 \
+   --max_steps 10 --save_every_n_steps 5 \
    --tensor_model_parallel_size $NUM_DEVICES \
    --model_path nvidia/Cosmos-1.0-Autoregressive-4B
+   ```
+
+3. You can now run inference with your post-trained model using the instructions [here](../inference/README.md#run-the-inference-script-with-post-trained-model).
+
+##### 5B and 13B Models
+
+Complete the following steps to post-train the Cosmos-1.0-Autoregressive-5B model.
+
+1. Set the following environment variables:
+
+   ```bash
+   export HF_TOKEN="<your/HF/access/token>"
+   export HF_HOME="<path/to/store/checkpoints>"
+
+   # Number of GPU devices available for post-training. At least 4 for 5B and 8 for 13B.
+   export NUM_DEVICES=4
+
+   # Optionally, you can monitor training progress with Weights and Biases (wandb).
+   export WANDB_API_KEY="</your/wandb/api/key>"
+   export WANDB_PROJECT_NAME="cosmos-autoregressive-nemo-finetuning"
+   export WANDB_RUN_ID="cosmos_autoregressive_5b_finetune"
+   ```
+
+2. Run the following command for Cosmos-1.0-Autoregressive-5B-Video2World post-training:
+
+   ```bash
+   torchrun --nproc-per-node $NUM_DEVICES \
+      cosmos1/models/autoregressive/nemo/post_training/video2world_finetuning.py \
+      --data_path $OUTPUT_PREFIX \
+      --log_dir ./logs \
+      --max_steps 10 --save_every_n_steps 5 \
+      --tensor_model_parallel_size $NUM_DEVICES \
+      --model_path nvidia/Cosmos-1.0-Autoregressive-5B-Video2World
    ```
 
 3. You can now run inference with your post-trained model using the instructions [here](../inference/README.md#run-the-inference-script-with-post-trained-model).
@@ -173,7 +259,7 @@ Before getting started, review the following parameters that made available to t
 | `--model_path` | Specifies the directory to the cosmos model to run post-training on. | `nvidia/Cosmos-1.0-Autoregressive-4B` |
 | `--index_mapping_dir` | Specifies the directory to store the indexed dataset. | `./index_mapping` |
 | `--log_dir` | Specifies the directory to store the logs and checkpoints. | `./log_dir` |
-| `--split_string` | Specifies the data split ratios for training, validation, and testing. | `4,1,1` |
+| `--split_string` | Specifies the data split ratios for training, validation, and testing. (Only valid for Base Model (4B and 12B)) | `4,1,1` |
 | `--tensor_model_parallel_size` | Controls the number of GPUs used for model parallelism. Increase this number to scale up, ensuring your hardware can support the additional load. | `2` |
 | `--max_steps` | Defines the total number of training steps. Adjust based on training duration and storage capacity. | `100` |
 | `--save_every_n_steps` | Defines how often checkpoints are saved. Adjust based on training duration and storage capacity. | `10` |

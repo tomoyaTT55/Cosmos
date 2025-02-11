@@ -12,22 +12,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Please keep requirements sorted alphabetically
-av
-better-profanity
-einops==0.7.0
-einx==0.1.3
-git+https://github.com/NVlabs/Pytorch_Retinaface.git@b843f45
-huggingface-hub>=0.26.2
-hydra-core
-imageio[ffmpeg]
-iopath
-loguru
-mediapy
-nltk
-peft
-pillow
-sentencepiece
-termcolor
-transformers==4.45.0

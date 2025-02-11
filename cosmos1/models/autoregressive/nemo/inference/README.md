@@ -8,10 +8,10 @@ The NeMo Framework supports the following Cosmos Autoregressive (AR) models. Rev
 
 | Model Name                               | Model Status | Compute Requirements for Inference | Multi-GPU Support |
 |----------------------------------------------|------------------|------------------------------------------|---------|
-| Cosmos-1.0-Autoregressive-4B                     | **Supported**    | 1 NVIDIA GPU*                            |    **Coming Soon**   |
-| Cosmos-1.0-Autoregressive-12B                 | **Supported**    | 1 NVIDIA GPU*                            |   **Coming Soon**    |
-| Cosmos-1.0-Autoregressive-5B-Video2World          | **Coming Soon**  |                                          |         |
-| Cosmos-1.0-Autoregressive-13B-Video2World        | **Coming Soon**  |                                          |         |
+| Cosmos-1.0-Autoregressive-4B     | **Supported**    | 1 NVIDIA GPU*  |    **Coming Soon**   |
+| Cosmos-1.0-Autoregressive-12B    | **Supported**    | 1 NVIDIA GPU*  |    **Coming Soon**   |
+| Cosmos-1.0-Autoregressive-5B-Video2World | **Supported**    | 1 NVIDIA GPU*  |    **Coming Soon**   |
+| Cosmos-1.0-Autoregressive-13B-Video2World | **Supported**    | 1 NVIDIA GPU*  |    **Coming Soon**   |
 
 **\*** `H100-80GB` or `A100-80GB` GPUs are recommended.
 
@@ -21,8 +21,8 @@ Cosmos Autoregressive-based WFMs can be post-trained for a variety of Physical A
 
 | Post-training Task  | Inference Support Status |
 |-------------------------|--------------------|
-| General post-training     | **Supported**      |
-| Instruction control     | **Coming Soon**    |
+| General post-training     | **Supported**    |
+| Instruction control       | **Supported**    |
 | Action control          | **Coming Soon**    |
 | Camera control          | **Coming Soon**    |
 | Multi-view generation   | **Coming Soon**    |
@@ -49,10 +49,11 @@ git clone git@github.com:NVIDIA/Cosmos.git
 The [NeMo Framework container](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo) supports post-training and inference for Cosmos AR models.
 
 Run the following command to download and start the container:
+
    ```bash
    docker run --ipc=host -it --gpus=all \
     -v $PATH_TO_COSMOS_REPO:/workspace/Cosmos \
-    nvcr.io/nvidia/nemo:cosmos.1.0 bash
+    nvcr.io/nvidia/nemo:25.02.rc1 bash
    ```
 
 ### 4. Download Checkpoints
@@ -60,12 +61,15 @@ Run the following command to download and start the container:
 To help you get started, we've provided a [download script](../download_autoregressive_nemo.py) to get the Cosmos Autoregressive checkpoints from Hugging Face. These checkpoints are in the NeMo distributed checkpoint format required to run post-training and inference with NeMo Framework.
 
 1. Set the following environment variables:
+
    ```bash
    # You must set HF_HOME before running this script.
    export HF_TOKEN="<your/HF/access/token>"
    export HF_HOME="<path/to/store/checkpoints>"
    ```
+
 2. Run the following command to download the models:
+
    ```bash
    cd /workspace/Cosmos
    python cosmos1/models/autoregressive/nemo/download_autoregressive_nemo.py
@@ -77,19 +81,27 @@ Running inference with Cosmos AR models lets you predict video frames and genera
 
 In this guide, we'll use this [example inference script](./general.py) to tokenize the input video into a sequence of tokens, which serve as prompts for the model. The model then generates new tokens representing the next set of frames. Finally, the new tokens are decoded back into video format. Only the last 9 frames of the input video are used to generate the next 24 frames.
 
-### Run the Inference Script with Base Model
+### Run the Inference Script with Base Models
+
+#### 4B and 12B Models
 
 Complete the following steps to run inference on the 4B model.
 
 1. Set the following environment variables:
+
    ```bash
+   # Install required packages
+   pip install --no-cache-dir imageio[ffmpeg] pyav iopath better_profanity peft git+https://github.com/NVlabs/Pytorch_Retinaface.git@b843f45
+
    export HF_TOKEN="<your/HF/access/token>"
    export HF_HOME="<path/to/store/checkpoints>"
 
    # Path to the the mp4 file (In git-lfs)
    export INPUT_DATA=cosmos1/models/autoregressive/assets/v1p0/input.mp4
    ```
+
 2. Run the following command:
+
    ```bash
    cd /workspace/Cosmos
    git lfs pull $INPUT_DATA
@@ -103,25 +115,64 @@ Complete the following steps to run inference on the 4B model.
    --ar_model_dir nvidia/Cosmos-1.0-Autoregressive-4B
    ```
 
-### Run the Inference Script with Post-trained Model
+#### 5B and 13B Models
 
-Create a post-trained model first, by using the instructions [here](../post_training/README.md)
-Complete the following steps to generate a new output video using this model.
+Complete the following steps to run inference on the 5B model.
 
 1. Set the following environment variables:
+
+   ```bash
+   # Install required packages
+   pip install --no-cache-dir imageio[ffmpeg] pyav iopath better_profanity peft git+https://github.com/NVlabs/Pytorch_Retinaface.git@b843f45
+
+   export HF_TOKEN=<YOUR HF TOKEN>
+   export HF_HOME="<path/to/store/checkpoints>"
+
+   # Path to the the mp4 file (In git-lfs)
+   export INPUT_DATA=cosmos1/models/autoregressive/assets/v1p0/input.mp4
+   ```
+
+2. Run the following command:
+
+   ```bash
+   cd /workspace/Cosmos
+   git lfs pull $INPUT_DATA
+
+   NVTE_FLASH_ATTN=1 \
+   NVTE_FUSED_ATTN=0 \
+   NVTE_UNFUSED_ATTN=0 \
+   python3 cosmos1/models/autoregressive/nemo/inference/video2world.py \
+      --input_type video \
+      --input_image_or_video_path 'cosmos1/models/autoregressive/assets/v1p0/input.mp4' \
+      --prompt "A video recorded from a moving vehicle's perspective, capturing roads, buildings, landscapes, and changing weather and lighting conditions." \
+      --disable_diffusion_decoder \
+      --ar_model_dir nvidia/Cosmos-1.0-Autoregressive-5B-Video2World
+   ```
+
+### Run the Inference Script with Post-trained Models
+
+You must [create a post-trained model](../post_training/README.md) before completing this section.
+
+#### 4B and 12B Models
+
+Complete the following steps to generate a new output video using a post-trained Base model.
+
+1. Set the following environment variables:
+
    ```bash
    export HF_TOKEN="<your/HF/access/token>"
    export HF_HOME="<path/to/store/checkpoints>"
 
    # Inference with post-trained model.
    # NOTE: Dont use the checkpoint with -last suffix.
-   export NEMO_CHECKPOINT=./logs/default/checkpoints/epoch\=0-step\=19
+   export NEMO_CHECKPOINT=./logs/default/checkpoints/epoch\=0-step\=9
 
    # Path to the the mp4 file (In git-lfs)
    export INPUT_DATA=cosmos1/models/autoregressive/assets/v1p0/input.mp4
-
    ```
+
 2. Run the following command:
+
    ```bash
    cd /workspace/Cosmos
    git lfs pull $INPUT_DATA
@@ -136,12 +187,48 @@ Complete the following steps to generate a new output video using this model.
    --ar_model_dir "$NEMO_CHECKPOINT"
    ```
 
+#### 5B and 13B Models
+
+Complete the following steps to generate a new output video using a post-trained Video2World model.
+
+1. Set the following environment variables:
+
+   ```bash
+   export HF_TOKEN="<your/HF/access/token>"
+   export HF_HOME="<path/to/store/checkpoints>"
+
+   # Inference with post-trained model.
+   # NOTE: Dont use the checkpoint with -last suffix.
+   export NEMO_CHECKPOINT=./logs/default/checkpoints/epoch\=2-step\=9-last
+
+   # Path to the the mp4 file (In git-lfs)
+   export INPUT_DATA=cosmos1/models/autoregressive/assets/v1p0/input.mp4
+
+   ```
+
+2. Run the following command:
+
+   ```bash
+   cd /workspace/Cosmos
+   git lfs pull $INPUT_DATA
+
+   # change --ar_model_dir to a post-trained checkpoint under ./logs/default/checkpoints/
+   NVTE_FLASH_ATTN=1 \
+   NVTE_FUSED_ATTN=0 \
+   NVTE_UNFUSED_ATTN=0 \
+   python3 cosmos1/models/autoregressive/nemo/inference/video2world.py \
+      --input_image_or_video_path $INPUT_DATA \
+      --video_save_name "Cosmos-1.0-Autoregressive-5B-Video2World.mp4" \
+      --prompt "A video recorded from a moving vehicle's perspective, capturing roads, buildings, landscapes, and changing weather and lighting conditions." \
+      --ar_model_dir "$NEMO_CHECKPOINT"
+   ```
+
 #### Example Output
 
 The following output is an example video generated from the post-trained model using [`general.py`](./general.py):
 
 <video src="https://github.com/user-attachments/assets/e744a5a4-2ce0-4de3-9497-7152b25c9022">
-  Your browser does not support the video tag.
+  Your browser doesn't support the video tag.
 </video>
 
 Generated videos are saved at the location configured in the `--video_save_name` parameter.

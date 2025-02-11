@@ -23,6 +23,7 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from megatron.core.models.common.embeddings.rotary_pos_embedding import RotaryEmbedding
+from megatron.core.transformer.enums import AttnBackend
 from nemo.collections.llm.gpt.model.llama import Llama3Config, LlamaModel
 from nemo.collections.llm.utils import Config
 from nemo.lightning import OptimizerModule, io
@@ -61,6 +62,7 @@ class RotaryEmbedding3D(RotaryEmbedding):
         original_max_position_embeddings=None,
         extrapolation_factor=1,
         attn_factor=1,
+        pad_to_multiple_of=None,
     ) -> None:
         super().__init__(
             kv_channels=kv_channels,
@@ -68,6 +70,7 @@ class RotaryEmbedding3D(RotaryEmbedding):
             rotary_percent=1.0,
             use_cpu_initialization=use_cpu_initialization,
         )
+        self.training_type = training_type
         self.latent_shape = latent_shape
         self.device = "cpu" if use_cpu_initialization else torch.cuda.current_device()
         self.dim = kv_channels
@@ -101,6 +104,7 @@ class RotaryEmbedding3D(RotaryEmbedding):
         if self.apply_yarn and seq_len > max_seq_len_cached:
             max_seq_len_cached = seq_len
         self.max_seq_len_cached = max_seq_len_cached
+        self.pad_to_multiple_of = pad_to_multiple_of
         self.freqs = self.get_freqs_non_repeated(self.max_seq_len_cached)
 
     def get_mscale(self, scale: float = 1.0) -> float:
@@ -145,6 +149,16 @@ class RotaryEmbedding3D(RotaryEmbedding):
             dim=-1,
         )
         emb = rearrange(emb, "t h w d -> (t h w) 1 1 d").float()
+
+        if self.training_type == "text_to_video":
+            bov_pe = torch.zeros((1, *emb.shape[1:]), device=emb.device)
+            emb = torch.cat((bov_pe, emb), dim=0)
+
+        if self.pad_to_multiple_of is not None and emb.shape[0] % self.pad_to_multiple_of != 0:
+            # Round up to the nearest multiple of pad_to_multiple_of
+            pad_len = self.pad_to_multiple_of - emb.shape[0] % self.pad_to_multiple_of
+            emb = torch.cat((emb, torch.zeros((pad_len, *emb.shape[1:]), device=emb.device)), dim=0)
+
         return emb
 
     @lru_cache(maxsize=32)
@@ -171,6 +185,7 @@ class CosmosConfig(Llama3Config):
     rope_dim: str = "3D"
     vocab_size: int = 64000
     activation_func = F.silu
+    attention_backend: AttnBackend = AttnBackend.flash
 
     def configure_model(self, tokenizer) -> "MCoreGPTModel":
         model = super().configure_model(tokenizer)

@@ -439,6 +439,7 @@ class SinCosPosEmbAxisTE(torch.nn.Module):
         latent_shape: Optional[List[int]] = None,
         pad_to_multiple_of: Optional[int] = None,
         dtype: torch.dtype = torch.bfloat16,
+        device="cuda",
         **kwargs,
     ):
         """
@@ -459,9 +460,9 @@ class SinCosPosEmbAxisTE(torch.nn.Module):
         emb_w = get_1d_sincos_pos_embed_from_grid(dim_w, pos=np.arange(W))
         emb_t = get_1d_sincos_pos_embed_from_grid(dim_t, pos=np.arange(T))
 
-        self.register_buffer("pos_emb_h", torch.from_numpy(emb_h).to(dtype=dtype, device="cuda"), persistent=False)
-        self.register_buffer("pos_emb_w", torch.from_numpy(emb_w).to(dtype=dtype, device="cuda"), persistent=False)
-        self.register_buffer("pos_emb_t", torch.from_numpy(emb_t).to(dtype=dtype, device="cuda"), persistent=False)
+        self.register_buffer("pos_emb_h", torch.from_numpy(emb_h).to(dtype=dtype, device=device), persistent=False)
+        self.register_buffer("pos_emb_w", torch.from_numpy(emb_w).to(dtype=dtype, device=device), persistent=False)
+        self.register_buffer("pos_emb_t", torch.from_numpy(emb_t).to(dtype=dtype, device=device), persistent=False)
         self.pad_to_multiple_of = pad_to_multiple_of
 
     def forward(

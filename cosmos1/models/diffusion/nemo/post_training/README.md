@@ -10,8 +10,8 @@ The NeMo Framework supports the following Cosmos Diffusion models. Review the av
 |----------------------------------------------|------------------|------------------------------------------|
 | Cosmos-1.0-Diffusion-7B-Text2World           | **Supported**    | 8 NVIDIA GPUs*                           |
 | Cosmos-1.0-Diffusion-14B-Text2World          | **Supported**    | 8 NVIDIA GPUs*                           |
-| Cosmos-1.0-Diffusion-7B-Video2World          | **Coming Soon**  |                                          |
-| Cosmos-1.0-Diffusion-14B-Video2WorldB        | **Coming Soon**  |                                          |
+| Cosmos-1.0-Diffusion-7B-Video2World          | **Supported**    | 8 NVIDIA GPUs*                           |
+| Cosmos-1.0-Diffusion-14B-Video2WorldB        | **Supported**    | 8 NVIDIA GPUs*                           |
 
 
 **\*** `H100-80GB` or `A100-80GB` GPUs are recommended.
@@ -53,12 +53,12 @@ Run the following command to download and start the container:
 ```bash
 docker run --ipc=host -it --gpus=all \
   -v $PATH_TO_COSMOS_REPO:/workspace/Cosmos \
-  nvcr.io/nvidia/nemo:cosmos.1.0 bash
+  nvcr.io/nvidia/nemo:cosmos.1.0.1 bash
 ```
 
 ### 4. Download Checkpoints
 
-To help you get started, we've provided a [download script](../download_diffusion_nemo.py) to get the Cosmos Diffusion checkpoints from Hugging Face. These checkpoints are in the NeMo distributed checkpoint format required to run post-training and inference with NeMo Framework.
+To help you get started, we've provided a [download script](../download_diffusion_nemo.py) to get the Cosmos Diffusion Text2World and Video2World checkpoints from Hugging Face. These checkpoints are in the NeMo distributed checkpoint format required to run post-training and inference with NeMo Framework.
 
 1. Set the following environment variables:
    ```bash
@@ -82,7 +82,7 @@ There are 3 steps to post-training: preparing a dataset, preprocessing the data,
 
 ### 1. Prepare a Dataset
 
-The first step is to prepare a dataset. Post-training a Cosmos-1.0-Diffusion-Text2World-{7B/14B}-NeMo model enables you to generate videos of a specific subject in new environments using a collection of input videos of that same subject as reference material.
+The first step is to prepare a dataset. Post-training a Cosmos-1.0-Diffusion-Text2World/Cosmos-1.0-Diffusion-Video2World model enables you to generate videos of a specific subject in new environments using a collection of input videos of that same subject as reference material.
 
 You must provide a folder containing a collection of videos in **MP4 format**, preferably 720p. These videos should focus on the subject throughout the entire video so that each video chunk contains the subject.
 
@@ -92,7 +92,7 @@ Run the following command to download the sample videos used for post-training:
 huggingface-cli download nvidia/Cosmos-NeMo-Assets --repo-type dataset --local-dir cosmos1/models/diffusion/assets/ --include "*.mp4*"
 ```
 
-### 2. Preprocess Data
+### 2. Preprocess Data for Single Subject Post-training
 
 The second step is to preprocess the input videos. This generates the post-training samples and the metadata required for the post-training process by:
 
@@ -114,12 +114,13 @@ Before proceeding, ensure all videos are in **RGB format**. Complete the followi
    export CACHED_DATA="./cached_data" && mkdir -p $CACHED_DATA
    ```
 2. Run the following command to preprocess the data:
+
    ```bash
    python cosmos1/models/diffusion/nemo/post_training/prepare_dataset.py \
    --dataset_path $RAW_DATA \
    --output_path $CACHED_DATA \
    --prompt "A video of sks teal robot." \
-   --num_chunks 500
+   --num_chunks 500 \
    ```
 
 Executing the [data preprocessing script](./prepare_dataset.py) generates the following files for each video (using `[i]` as the `index` of the video) at `$CACHED_DATA` path:
@@ -128,6 +129,38 @@ Executing the [data preprocessing script](./prepare_dataset.py) generates the fo
 - **`[i].t5_text_embeddings.pth`**: T5-generated text embedding for the video clip.
 - **`[i].t5_text_mask.pth`**: Mask for T5 text embedding, set to all ones by default to use the entire text embedding.
 - **`[i].video_latent.pth`**: 3D spatiotemporal video tokens generated from the video tokenizer.
+- **`[i].conditioning_latent.pth`**: 3D spatiotemporal video tokens generated from the video tokenizer on the first nine frames of the input video. These conditioning latents are only used during Video2World training.
+
+### 3. Preprocess Data for Robot Instruction (or other Custom Prompt) Post-training
+
+Robot instruction post-training uses instructions as input prompts. Instructions are imperative prompts and correspond to the physical actions performed by the robot in a video. The instruction dataset processing workflow generalizes to any custom input prompt per video.
+
+1. Create instruction dataset
+
+Create a dataset folder containing videos and per video instructions in the following format:
+
+```
+robot_dataset
+   videos
+      id1.mp4
+      id2.mp4
+      ...
+   instructions
+      id1.json
+      id2.json
+```
+
+- **`robot_dataset/videos/id1.mp4`**: video clip
+- **`robot_dataset/instructions/id1.json`**: json file with key `language_instruction_0` mapping to a text instruction
+
+2. Run the following command to preprocess the data:
+   ```bash
+   python cosmos1/models/diffusion/nemo/post_training/prepare_instruction_dataset.py \
+   --dataset_path robot_dataset \
+   --output_path robot_dataset/processed \
+   --num_chunks 500
+   ```
+The output dataset is saved in `robot_dataset/processed/` in the same format described in the previous section.
 
 ### 3. Post-train the Model
 
@@ -141,7 +174,10 @@ The third step is to post-train the model. This step uses NeMo Framework's data 
 
 #### Run the Post-training Script
 
-Complete the following steps to post-train the Cosmos-1.0-Diffusion-7B-Text2World model on the robot dataset using 8 GPUs.
+
+Complete the following steps to post-train the Cosmos-1.0-Diffusion-7B-Text2World or Cosmos-1.0-Diffusion-7B-Video2World models on the robot dataset using 8 GPUs.
+
+##### Text2World
 
 1. Set the following environment variables:
    ```bash
@@ -165,15 +201,51 @@ Complete the following steps to post-train the Cosmos-1.0-Diffusion-7B-Text2Worl
        trainer.max_steps=1000 \
        optim.config.lr=1e-6
    ```
-3. You can now run inference with your post-trained model using the instructions [here](../inference/README.md#run-the-inference-script-with-post-trained-model).
 
-#### Configuration Options
+###### Configuration Options
 
 Before getting started, review the following parameters made available to the script. You can adjust these parameters to optimize performance based on your specific requirements.
 
 | Parameter                      | Description                                                                     | Default |
 |--------------------------------|---------------------------------------------------------------------------------|---------|
 | `--factory`                   | recipe to use cosmos_diffusion_7b_text2world_finetune or cosmos_diffusion_14b_text2world_finetune for general post-training                                   | cosmos_diffusion_7b_text2world_finetune    |
+| `data.path`                   | Path to processed post-training dataset (str).                                    | None    |
+| `resume.restore_config.path`  | Path to pre-trained Cosmos Diffusion NeMo distributed checkpoint (str).         | None    |
+| `optim.config.lr`             | Learning rate (float).                                                          | 1e-6    |
+
+##### Video2World
+
+1. Set the following environment variables:
+   ```bash
+   export HF_TOKEN="<your/HF/access/token>"
+   export HF_HOME="<path/to/store/checkpoints>"
+
+   # Optionally, you can monitor training progress with Weights and Biases (wandb).
+   export WANDB_API_KEY="</your/wandb/api/key>"
+   export WANDB_PROJECT_NAME="cosmos-diffusion-nemo-post-training"
+   export WANDB_RUN_ID="cosmos_diffusion_7b_video2world_finetune"
+   ```
+2. Run the following command for Cosmos-Diffusion-Video2World-7B general post-training:
+   ```bash
+   NVTE_FUSED_ATTN=0 \
+   CUDA_DEVICE_MAX_CONNECTIONS=1 \
+   PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+   torchrun --nproc_per_node=8 cosmos1/models/diffusion/nemo/post_training/video2world.py \
+       --yes \
+       --factory cosmos_diffusion_7b_video2world_finetune \
+       data.path=$CACHED_DATA \
+       trainer.max_steps=1000 \
+       optim.config.lr=1e-6
+
+You can now run inference with your post-trained model using the instructions [here](../inference/README.md#run-the-inference-script-with-post-trained-model).
+
+###### Configuration Options
+
+Before getting started, review the following parameters made available to the script. You can adjust these parameters to optimize performance based on your specific requirements.
+
+| Parameter                      | Description                                                                     | Default |
+|--------------------------------|---------------------------------------------------------------------------------|---------|
+| `--factory`                   | recipe to use cosmos_diffusion_7b_video2world_finetune or cosmos_diffusion_14b_video2world_finetune for video2world post-training                                   | cosmos_diffusion_7b_video2world_finetune    |
 | `data.path`                   | Path to processed post-training dataset (str).                                    | None    |
 | `resume.restore_config.path`  | Path to pre-trained Cosmos Diffusion NeMo distributed checkpoint (str).         | None    |
 | `optim.config.lr`             | Learning rate (float).                                                          | 1e-6    |
