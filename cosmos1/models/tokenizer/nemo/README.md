@@ -73,6 +73,65 @@ The first step is to prepare your dataset. Organize your data into a folder cont
 
 Here, 000000.tar and 000001.tar represent separate shards, and you may include additional shards as needed.
 
+Next we need to index the webdataset with [energon](<https://github.com/NVIDIA/Megatron-Energon>). Navigate to the dataset directory and run the following command:
+
+```bash
+energon prepare . --num-workers 8 --shuffle-tars
+```
+
+Interactively select dataset type `ImageWebdataset` and specify the type `mp4`. Below is an example of the interactive setup:
+
+```
+Found 2925 tar files in total. The first and last ones are:
+- 000000.tar
+- 002924.tar
+If you want to exclude some of them, cancel with ctrl+c and specify an exclude filter in the command line.
+Please enter a desired train/val/test split like "0.5, 0.2, 0.3" or "8,1,1": 99,1,0
+Indexing shards  [####################################]  2925/2925
+Sample 0, keys:
+- mp4
+Sample 1, keys:
+- mp4
+Found the following part types in the dataset: mp4
+Do you want to create a dataset.yaml interactively? [Y/n]:
+The following dataset classes are available:
+0. CaptioningWebdataset
+1. CrudeWebdataset
+2. ImageClassificationWebdataset
+3. ImageWebdataset
+4. InterleavedWebdataset
+5. MultiChoiceVQAWebdataset
+6. OCRWebdataset
+7. SimilarityInterleavedWebdataset
+8. TextWebdataset
+9. VQAOCRWebdataset
+10. VQAWebdataset
+11. VidQAWebdataset
+Please enter a number to choose a class: 3
+The dataset you selected uses the following sample type:
+
+@dataclass
+class ImageSample(Sample):
+    """Sample type for an image, e.g. for image reconstruction."""
+
+    #: The input image tensor in the shape (C, H, W)
+    image: torch.Tensor
+
+Do you want to set a simple field_map[Y] (or write your own sample_loader [n])? [Y/n]:
+
+For each field, please specify the corresponding name in the WebDataset.
+Available types in WebDataset: mp4
+Leave empty for skipping optional field
+You may also access json fields e.g. by setting the field to: json[field][field]
+You may also specify alternative fields e.g. by setting to: jpg,png
+Please enter the field_map for ImageWebdataset:
+Please enter a webdataset field name for 'image' (<class 'torch.Tensor'>):
+That type doesn't exist in the WebDataset. Please try again.
+Please enter a webdataset field name for 'image' (<class 'torch.Tensor'>): mp4
+Done
+```
+
+
 ### 3. Post-train the Model
 
 The third step is to post-train the Cosmos tokenizer using the NeMo Framework.
