@@ -86,6 +86,9 @@ Complete the following steps to post-train the Cosmos tokenizer Cosmos-1.0-Token
     pip install megatron-energon==4.0.0 pyav
     pip install git+https://github.com/NVIDIA/NeMo-Run.git
     pip install moviepy==1.0.3 imageio
+
+    # switch to NeMo branch supporting tokenizer post-training
+    cd /opt/NeMo && git fetch origin cosmos_tokenizer && git checkout cosmos_tokenizer
    ```
 
 2. Run the following command to post-train Cosmos-1.0-Tokenizer-CV8x8x8:

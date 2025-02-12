@@ -18,7 +18,6 @@ av
 better-profanity
 einops==0.7.0
 einx==0.1.3
-git+https://github.com/NVlabs/Pytorch_Retinaface.git@b843f45
 huggingface-hub>=0.26.2
 hydra-core
 imageio[ffmpeg]
@@ -28,6 +27,7 @@ mediapy
 nltk
 peft
 pillow
+pytorch_retinaface @ git+https://github.com/NVlabs/Pytorch_Retinaface.git@b843f45
 sentencepiece
 termcolor
 transformers==4.45.0
