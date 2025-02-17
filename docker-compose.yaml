@@ -1,0 +1,23 @@
+version: "3.3"
+services:
+  cosmos:
+    build:
+      context: .
+      # secrets:
+      #   - github_pat
+      # args:
+      #   - github_username=kurata0666
+    shm_size: '128gb'
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    volumes:
+      - /mnt/data/share/weights/cosmos_checkpoints:/workspace/cosmos_checkpoints
+    entrypoint: sleep infinity
+    ports:
+      - 30001:5000/udp
